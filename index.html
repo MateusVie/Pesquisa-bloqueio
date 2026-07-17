@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Consulta de linhas bloqueadas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0E1116;
+    --bg-radial: #171D26;
+    --panel: #161B22;
+    --panel-2: #1C222B;
+    --line: #262D38;
+    --text: #E7EBF0;
+    --muted: #7C8798;
+    --teal: #21D6A6;
+    --teal-dim: #123B32;
+    --coral: #FF5C4D;
+    --coral-dim: #3A1712;
+    --amber: #F2B84B;
+    --amber-dim: #3A2C0C;
+    --btn-bg: #E7EBF0;
+    --btn-text: #12161C;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: radial-gradient(circle at 50% -10%, var(--bg-radial) 0%, var(--bg) 55%);
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    min-height: 100vh;
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    padding: 48px 20px;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .console{
+    width: 100%;
+    max-width: 560px;
+  }
+  .top-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom: 10px;
+  }
+  .eyebrow{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .dot{
+    width:7px;height:7px;border-radius:50%;
+    background: var(--teal);
+    box-shadow: 0 0 0 3px var(--teal-dim);
+  }
+  h1{
+    font-size: 26px;
+    font-weight: 600;
+    margin: 0 0 6px;
+    letter-spacing: -0.01em;
+  }
+  .sub{
+    color: var(--muted);
+    font-size: 14px;
+    margin: 0 0 32px;
+    line-height: 1.6;
+  }
+  .panel{
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 28px;
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+  .field-label{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+    display:block;
+  }
+  .input-row{
+    display:flex;
+    gap:10px;
+  }
+  input#numero{
+    flex:1;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 18px;
+    letter-spacing: 0.02em;
+    padding: 14px 16px;
+    border-radius: 10px;
+    outline: none;
+    min-width: 0;
+    transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+  }
+  input#numero::placeholder{ color: var(--muted); opacity: 0.7; }
+  input#numero:focus{ border-color: var(--muted); }
+  button#buscar{
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    background: var(--btn-bg);
+    color: var(--btn-text);
+    border: none;
+    border-radius: 10px;
+    padding: 0 22px;
+    cursor: pointer;
+    transition: transform 0.08s ease, opacity 0.15s ease;
+  }
+  button#buscar:hover{ opacity: 0.9; }
+  button#buscar:active{ transform: scale(0.97); }
+
+  .result{
+    margin-top: 24px;
+    border-radius: 12px;
+    padding: 22px 24px;
+    border: 1px solid var(--line);
+    background: var(--panel-2);
+    display:none;
+  }
+  .result.show{ display:block; }
+
+  .result-top{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    margin-bottom: 4px;
+  }
+  .signal{
+    width:12px;height:12px;border-radius:50%;
+    flex-shrink:0;
+  }
+  .signal.blocked{ background: var(--coral); box-shadow: 0 0 0 5px var(--coral-dim); }
+  .signal.free{ background: var(--teal); box-shadow: 0 0 0 5px var(--teal-dim); }
+
+  .status-text{
+    font-size: 17px;
+    font-weight: 600;
+  }
+  .status-text.blocked{ color: var(--coral); }
+  .status-text.free{ color: var(--teal); }
+
+  .queried-number{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 6px;
+    padding-left: 24px;
+  }
+
+  .warning{
+    display:none;
+    align-items:flex-start;
+    gap: 10px;
+    margin-top: 16px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    background: var(--amber-dim);
+    border: 1px solid var(--amber);
+  }
+  .warning.show{ display:flex; }
+  .warning-icon{
+    color: var(--amber);
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+  .warning-text{
+    color: var(--amber);
+    font-size: 13px;
+    line-height: 1.5;
+    font-weight: 500;
+  }
+
+  .hint{
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 16px;
+    line-height: 1.6;
+  }
+
+  .footer-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-top: 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+  }
+
+  @keyframes flash{
+    0%{ opacity: 0.4; }
+    100%{ opacity: 1; }
+  }
+  .result.show{ animation: flash 0.2s ease; }
+
+  .update-link{
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    padding: 0;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .update-link:hover{ color: var(--text); }
+
+  .overlay{
+    display:none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 50;
+  }
+  .overlay.show{ display:flex; }
+  .modal{
+    width: 100%;
+    max-width: 380px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 24px;
+  }
+  .modal-top{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom: 18px;
+  }
+  .modal-title{
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .modal-close{
+    background:none;
+    border:none;
+    color: var(--muted);
+    font-size: 18px;
+    cursor:pointer;
+    line-height:1;
+    padding: 2px;
+  }
+  .modal-close:hover{ color: var(--text); }
+  .modal p.desc{
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.6;
+    margin: 0 0 16px;
+  }
+  input#senhaBase, input#arquivoBase{
+    width:100%;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    outline: none;
+    margin-bottom: 12px;
+  }
+  input#arquivoBase{ font-size: 12px; padding: 10px 12px; }
+  input#senhaBase:focus{ border-color: var(--muted); }
+  .modal-btn{
+    width:100%;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    background: var(--btn-bg);
+    color: var(--btn-text);
+    border: none;
+    border-radius: 10px;
+    padding: 12px;
+    cursor: pointer;
+  }
+  .modal-btn:hover{ opacity:0.9; }
+  .modal-msg{
+    font-size: 12px;
+    margin-top: 10px;
+    line-height: 1.5;
+    display:none;
+  }
+  .modal-msg.show{ display:block; }
+  .modal-msg.erro{ color: var(--coral); }
+  .modal-msg.sucesso{ color: var(--teal); }
+  .step{ display:none; }
+  .step.show{ display:block; }
+</style>
+</head>
+<body>
+  <div class="console">
+    <div class="top-row">
+      <div class="eyebrow"><span class="dot"></span>Base de linhas bloqueadas</div>
+    </div>
+    <h1>Consulta de linha</h1>
+    <p class="sub">Digite o número, com ou sem DDI/DDD, e veja se ele está na lista de linhas bloqueadas.</p>
+
+    <div class="panel">
+      <span class="field-label">Número</span>
+      <div class="input-row">
+        <input id="numero" type="text" placeholder="Ex: 11 92015-4366" autocomplete="off" inputmode="numeric" />
+        <button id="buscar">Buscar</button>
+      </div>
+
+      <div class="result" id="resultado">
+        <div class="result-top">
+          <div class="signal" id="signal"></div>
+          <div class="status-text" id="statusText"></div>
+        </div>
+        <div class="queried-number" id="numeroConsultado"></div>
+        <div class="warning" id="warning">
+          <span class="warning-icon">!</span>
+          <span class="warning-text">Não desbloquear esta linha.</span>
+        </div>
+      </div>
+
+      <div class="hint">A busca ignora espaços, parênteses e traços, e funciona com ou sem o código do país (55).</div>
+    </div>
+
+    <div class="footer-row">
+      <span id="totalCount">115 linhas na base</span>
+      <button class="update-link" id="abrirAtualizar" type="button">Atualizar base</button>
+      <span id="clock"></span>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay">
+    <div class="modal">
+      <div class="modal-top">
+        <span class="modal-title">Atualizar base</span>
+        <button class="modal-close" id="fecharModal" type="button" aria-label="Fechar">&times;</button>
+      </div>
+
+      <div class="step show" id="stepSenha">
+        <p class="desc">Acesso restrito. Informe a senha para liberar o envio de uma nova base.</p>
+        <input id="senhaBase" type="password" placeholder="Senha" autocomplete="off" />
+        <button class="modal-btn" id="confirmarSenha" type="button">Confirmar</button>
+        <div class="modal-msg erro" id="msgSenha">Senha incorreta.</div>
+      </div>
+
+      <div class="step" id="stepUpload">
+        <p class="desc">Envie a planilha (.xlsx ou .csv) com a nova lista de números bloqueados. Ela substituirá a base atual.</p>
+        <input id="arquivoBase" type="file" accept=".xlsx,.xls,.csv,.txt" />
+        <button class="modal-btn" id="confirmarUpload" type="button">Carregar base</button>
+        <div class="modal-msg erro" id="msgUploadErro"></div>
+        <div class="modal-msg sucesso" id="msgUploadSucesso"></div>
+      </div>
+    </div>
+  </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+  let numeros = ["5511920154366","5511920154351","5511920153151","5511920153132","5511922025405","5511922025404","5511922025401","5511922025397","5511922025395","5511922025393","5511922025392","5511922025388","5511922025381","5511922025346","5511920127969","5511920127987","5511920127986","5511920127991","5511920128065","5511920128067","5511920128109","5511920128180","5511920128208","5511920128253","5511922033700","5511922040722","5511922040721","5511922040720","5511922040716","5511922040712","5511922040702","5511922040679","5511922040672","5511922040668","5511922040664","5511922040662","5511920895056","5511922037646","5511922045042","5511922059667","5511922058211","5511922058112","5511922058073","5511922058046","5511922058007","5511922057976","5511922057970","5511922057969","5511920890237","5511920904416","5511933330299","5511933021284","5511920118588","5511920122594","5511920197681","5511920122648","5511920197749","5511920152507","5511920034255","5511922058856","5511922058851","5511922058850","5511922058849","5511922058831","5511922058824","5511922058804","5511922058793","5511922058790","5511922058752","5511922058746","5511922058735","5511922058715","5511922058705","5511922058702","5511922058699","5511922058687","5511922058642","5511922058636","5511922058631","5511922058623","5511920921592","5511920921586","5511920921580","5511920921576","5511920921573","5511920921571","5511920921570","5511920921568","5511920921564","5511920921559","5511920044176","5511920044162","5511920044147","5511920044126","5511920044124","5511920044089","5511920044084","5511920044074","5511920044071","5511920043823","5511920043782","5511920043776","5511920043719","5511920043667","5511920043500","5511920043493","5511920043486","5511920043469","5511920043423","5511920043407","5595920011277","5595920011269","5595920011830","5548920038830","5548920037531"];
+
+  let numeroSet = new Set(numeros);
+  const totalCount = document.getElementById('totalCount');
+
+  function aplicarBase(lista){
+    numeros = lista;
+    numeroSet = new Set(numeros);
+    totalCount.textContent = numeros.length + ' linhas na base';
+  }
+
+  const baseSalva = localStorage.getItem('baseLinhasBloqueadas');
+  if (baseSalva){
+    try{
+      const lista = JSON.parse(baseSalva);
+      if (Array.isArray(lista) && lista.length) aplicarBase(lista);
+    } catch(e){}
+  }
+
+  function limpar(v){ return (v || '').replace(/\D/g, ''); }
+
+  function isBloqueada(digitado){
+    if (numeroSet.has(digitado)) return true;
+    if (digitado.length >= 8){
+      for (const n of numeros){
+        if (n.endsWith(digitado)) return true;
+      }
+    }
+    return false;
+  }
+
+  function formatarExibicao(digitos){
+    if (digitos.length === 13){
+      const ddi = digitos.slice(0,2);
+      const ddd = digitos.slice(2,4);
+      const local = digitos.slice(4);
+      return `${ddi} (${ddd}) ${local.slice(0,-4)}-${local.slice(-4)}`;
+    }
+    if (digitos.length === 11){
+      const ddd = digitos.slice(0,2);
+      const local = digitos.slice(2);
+      return `(${ddd}) ${local.slice(0,-4)}-${local.slice(-4)}`;
+    }
+    if (digitos.length <= 4) return digitos;
+    return digitos.length > 8
+      ? digitos.slice(0,-8) + ' ' + digitos.slice(-8,-4) + '-' + digitos.slice(-4)
+      : digitos.slice(0,-4) + '-' + digitos.slice(-4);
+  }
+
+  const input = document.getElementById('numero');
+  const resultado = document.getElementById('resultado');
+  const signal = document.getElementById('signal');
+  const statusText = document.getElementById('statusText');
+  const numeroConsultado = document.getElementById('numeroConsultado');
+  const warning = document.getElementById('warning');
+
+  function buscar(){
+    const bruto = input.value;
+    const digitos = limpar(bruto);
+    if (!digitos){
+      resultado.classList.remove('show');
+      return;
+    }
+    const bloqueada = isBloqueada(digitos);
+
+    resultado.classList.remove('show');
+    void resultado.offsetWidth;
+    resultado.classList.add('show');
+
+    signal.className = 'signal ' + (bloqueada ? 'blocked' : 'free');
+    statusText.className = 'status-text ' + (bloqueada ? 'blocked' : 'free');
+    statusText.textContent = bloqueada ? 'Linha bloqueada' : 'Linha não encontrada na base';
+    numeroConsultado.textContent = formatarExibicao(digitos);
+    warning.classList.toggle('show', bloqueada);
+  }
+
+  document.getElementById('buscar').addEventListener('click', buscar);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') buscar(); });
+  input.focus();
+
+  function tick(){
+    const agora = new Date();
+    document.getElementById('clock').textContent = agora.toLocaleTimeString('pt-BR', { hour12:false });
+  }
+  tick();
+  setInterval(tick, 1000);
+
+  const SENHA_BASE = 'CXSurf2026';
+  const overlay = document.getElementById('overlay');
+  const stepSenha = document.getElementById('stepSenha');
+  const stepUpload = document.getElementById('stepUpload');
+  const senhaInput = document.getElementById('senhaBase');
+  const msgSenha = document.getElementById('msgSenha');
+  const arquivoInput = document.getElementById('arquivoBase');
+  const msgUploadErro = document.getElementById('msgUploadErro');
+  const msgUploadSucesso = document.getElementById('msgUploadSucesso');
+
+  function abrirModal(){
+    overlay.classList.add('show');
+    stepSenha.classList.add('show');
+    stepUpload.classList.remove('show');
+    senhaInput.value = '';
+    msgSenha.classList.remove('show');
+    msgUploadErro.classList.remove('show');
+    msgUploadSucesso.classList.remove('show');
+    arquivoInput.value = '';
+    setTimeout(() => senhaInput.focus(), 50);
+  }
+  function fecharModal(){ overlay.classList.remove('show'); }
+
+  document.getElementById('abrirAtualizar').addEventListener('click', abrirModal);
+  document.getElementById('fecharModal').addEventListener('click', fecharModal);
+  overlay.addEventListener('click', e => { if (e.target === overlay) fecharModal(); });
+
+  function confirmarSenha(){
+    if (senhaInput.value === SENHA_BASE){
+      stepSenha.classList.remove('show');
+      stepUpload.classList.add('show');
+    } else {
+      msgSenha.classList.add('show');
+    }
+  }
+  document.getElementById('confirmarSenha').addEventListener('click', confirmarSenha);
+  senhaInput.addEventListener('keydown', e => { if (e.key === 'Enter') confirmarSenha(); });
+
+  function extrairNumerosDeTexto(texto){
+    return texto
+      .split(/\r?\n|,/)
+      .map(l => limpar(l))
+      .filter(d => d.length >= 8);
+  }
+
+  function processarArquivo(){
+    msgUploadErro.classList.remove('show');
+    msgUploadSucesso.classList.remove('show');
+    const arquivo = arquivoInput.files[0];
+    if (!arquivo){
+      msgUploadErro.textContent = 'Selecione um arquivo.';
+      msgUploadErro.classList.add('show');
+      return;
+    }
+    const nome = arquivo.name.toLowerCase();
+    const leitor = new FileReader();
+
+    leitor.onload = function(e){
+      try{
+        let lista = [];
+        if (nome.endsWith('.csv') || nome.endsWith('.txt')){
+          lista = extrairNumerosDeTexto(e.target.result);
+        } else {
+          const dados = new Uint8Array(e.target.result);
+          const wb = XLSX.read(dados, { type: 'array' });
+          const primeiraAba = wb.Sheets[wb.SheetNames[0]];
+          const linhas = XLSX.utils.sheet_to_json(primeiraAba, { header: 1 });
+          linhas.forEach(linha => {
+            linha.forEach(celula => {
+              const d = limpar(String(celula));
+              if (d.length >= 8) lista.push(d);
+            });
+          });
+        }
+        lista = [...new Set(lista)];
+        if (!lista.length){
+          msgUploadErro.textContent = 'Nenhum número válido encontrado no arquivo.';
+          msgUploadErro.classList.add('show');
+          return;
+        }
+        aplicarBase(lista);
+        localStorage.setItem('baseLinhasBloqueadas', JSON.stringify(lista));
+        msgUploadSucesso.textContent = `Base atualizada: ${lista.length} números carregados.`;
+        msgUploadSucesso.classList.add('show');
+        setTimeout(fecharModal, 1400);
+      } catch(err){
+        msgUploadErro.textContent = 'Não foi possível ler o arquivo. Verifique o formato.';
+        msgUploadErro.classList.add('show');
+      }
+    };
+
+    if (nome.endsWith('.csv') || nome.endsWith('.txt')){
+      leitor.readAsText(arquivo);
+    } else {
+      leitor.readAsArrayBuffer(arquivo);
+    }
+  }
+  document.getElementById('confirmarUpload').addEventListener('click', processarArquivo);
+</script>
+</body>
+</html>
